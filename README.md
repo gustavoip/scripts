@@ -1,6 +1,6 @@
 # Set of personal scripts to make life less painful
 
-*  `scripts/screen_brightness_control.py` adjusts screen brightness depending on the time of day
+*  `scripts/screen_brightness_control.py` adjusts all screens' brightness depending on the time of day
     
     ```
     # crontab -e

@@ -1,28 +1,23 @@
 #!/usr/bin/python3
 
+import dataclasses
 import datetime
 import os
-import re
 import shutil
 import subprocess
 import sys
 
 _XRANDR_PATH = shutil.which("xrandr")
-_DEVICES_REGEX = re.compile(r" - Device: (.*)\n")
-_PROPERTIES_REGEX = re.compile(r"(?P<key>[^ ,]{1,20})=(?P<value>[^, \n\t]{1,20})")
 
 
 def get_monitors():
-    output = subprocess.check_output([_XRANDR_PATH], env=get_env_vars()).decode()
-    return [Monitor(x.split()[0]) for x in output.split("\n") if " connected" in x]
+    output = subprocess.check_output([_XRANDR_PATH], env=get_environ_with_display_var()).decode()
+    return [Screen(x.split()[0]) for x in output.split("\n") if " connected" in x]
 
 
-class Monitor:
-    def __init__(self, name):
-        self.name = name
-
-    def set_brightness(self, intensity):
-        set_brightness(self.name, round(intensity, 3))
+@dataclasses.dataclass
+class Screen:
+    name: str
 
 
 def get_scheduled_brightness():
@@ -32,29 +27,30 @@ def get_scheduled_brightness():
     if 4.5 < hour < 15:
         return 1
     #  gracefully decaying the light intensity
-    elif 15 < hour < 20:
-        p = _get_relative_progress(start=15, end=19.5, current=hour)
+    elif 15 <= hour < 20:
+        p = get_relative_progress(start=15, end=19.5, current=hour)
         return max(1 - (0.1 ** (1 - p)) * p, 0.55)
     else:
         return 0.35
 
 
-def set_brightness(path, percentage_value):
+def set_brightness(screen: Screen, percentage_value):
     assert 0.1 <= percentage_value <= 1
+    percentage_value = round(percentage_value, 3)
     subprocess.check_output(
-        [_XRANDR_PATH, "--output", path, "--brightness", str(percentage_value)],
-        env=get_env_vars(),
+        [_XRANDR_PATH, "--output", screen.name, "--brightness", str(percentage_value)],
+        env=get_environ_with_display_var(),
     )
 
 
-def _get_relative_progress(start, end, current):
+def get_relative_progress(start, end, current):
     assert current <= end
     percentage = (current - start) / (end - start)
     assert 0 <= percentage <= 1
     return percentage
 
 
-def get_env_vars():
+def get_environ_with_display_var():
     env = os.environ.copy()
     env["DISPLAY"] = ":0"
     return env
@@ -62,11 +58,11 @@ def get_env_vars():
 
 if __name__ == "__main__":
     value = float(sys.argv[1]) if len(sys.argv) == 2 else get_scheduled_brightness()
-    monitors = get_monitors()
-    for monitor in monitors:
+    screens = get_monitors()
+    for screen in screens:
         try:
-            monitor.set_brightness(value)
+            set_brightness(screen, value)
         except Exception as e:
-            print(f"[{type(e).__name__}] Error setting brightness={value} for {monitor.name}")
+            print(f"[{type(e).__name__}] Error setting brightness={value} for {screen.name}")
         else:
-            print(f"{monitor.name}'s brightness set to {value}%")
+            print(f"{screen.name}'s brightness set to {100*value}%")
