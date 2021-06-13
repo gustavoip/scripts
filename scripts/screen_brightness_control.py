@@ -6,6 +6,7 @@ import os
 import shutil
 import subprocess
 import sys
+import time
 
 _XRANDR_PATH = shutil.which("xrandr")
 
@@ -27,11 +28,11 @@ def get_scheduled_brightness():
     if 4.5 < hour < 15:
         return 1
     #  gracefully decaying the light intensity
-    elif 15 <= hour < 20:
+    elif 15 <= hour < 19.5:
         p = get_relative_progress(start=15, end=19.5, current=hour)
-        return max(1 - (0.1 ** (1 - p)) * p, 0.55)
+        return max(1 - (0.1 ** (1 - p)) * p, 0.25)
     else:
-        return 0.35
+        return 0.15
 
 
 def set_brightness(screen: Screen, percentage_value):
@@ -62,6 +63,7 @@ if __name__ == "__main__":
     for screen in screens:
         try:
             set_brightness(screen, value)
+            time.sleep(0.5)
         except Exception as e:
             print(f"[{type(e).__name__}] Error setting brightness={value} for {screen.name}")
         else:

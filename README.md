@@ -7,3 +7,8 @@
     
     */2 * * * * .../scripts/screen_brightness_control.py
     ```
+   **Issues**: in Manjaro you have to disable `Night Color` (it overwrites our previous changes). In other distributions 
+   with the same kind of feature, probably the same behavior will happen.
+
+      
+      
