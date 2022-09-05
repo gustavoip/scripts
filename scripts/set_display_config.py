@@ -39,13 +39,7 @@ def get_displays() -> List[Display]:
     output = _check_output([_DDCUTIL_EXECUTABLE, "detect"]).strip()
     models = [s.strip() for s in _MODEL_REGEX.findall(output)]
     busses = _I2C_BUS_REGEX.findall(output)
-
-    displays = []
-    for model, bus in zip(models, busses):
-        if model:
-            display = Display(model, bus, _get_input_source(model, bus))
-            displays.append(display)
-    return displays
+    return [Display(model, bus, _get_input_source(model, bus)) for model, bus in zip(models, busses) if model]
 
 
 def _get_input_source(model: str, bus: str) -> Optional[str]:
@@ -57,20 +51,17 @@ def _get_input_source(model: str, bus: str) -> Optional[str]:
 
 
 def set_new_input_source(display: Display, source: str):
-    param = _INPUT_SOURCE_PARAM[display.model]
     _check_output(
-        [_DDCUTIL_EXECUTABLE, "setvcp", "--bus", display.bus, param, source]
+        [_DDCUTIL_EXECUTABLE, "setvcp", "--bus", display.bus, _INPUT_SOURCE_PARAM[display.model], source]
     )
 
 
-def _check_output(command):
+def _check_output(command) -> str:
     print(command)
     try:
-        result = subprocess.check_output(command, stderr=subprocess.STDOUT).decode()
+        return subprocess.check_output(command, stderr=subprocess.STDOUT).decode()
     except subprocess.CalledProcessError as e:
-        result = str(e.output)
-
-    return result
+        return str(e.output)
 
 
 def to_work(display: List[Display]):
@@ -94,10 +85,14 @@ def to_home(display: List[Display]):
 
 
 def set_config(profile):
+    print(f"Selected profile {profile}")
+    profile = profile.lower().strip()
     displays = get_displays()
     if profile.lower() in ("gustavoip", "home"):
+        print("Setting home config")
         to_home(displays)
-    if profile.lower() == "work":
+    else:
+        print("Setting work config")
         to_work(displays)
 
 
