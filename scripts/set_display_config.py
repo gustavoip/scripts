@@ -1,7 +1,9 @@
 import dataclasses
+import os
 import re
 import shutil
 import subprocess
+import sys
 from enum import Enum
 from typing import List, Optional
 
@@ -71,32 +73,33 @@ def _check_output(command):
     return result
 
 
-def toggle():
+def to_work(display: List[Display]):
+    for d in display:
+        if d.model == "DELL S2721DS":
+            set_new_input_source(d, InputSourceS2721DS.HDMI_2.value)
+            print(f"Switching {d.model} to HDMI_2")
+        elif d.model == "DELL P2715Q":
+            set_new_input_source(d, InputSourceP2715Q.HDMI.value)
+            print(f"Switching {d.model} to HDMI")
+
+
+def to_home(display: List[Display]):
+    for d in display:
+        if d.model == "DELL S2721DS":
+            set_new_input_source(d, InputSourceS2721DS.HDMI_1.value)
+            print(f"Switching {d.model} to HDMI_1")
+        elif d.model == "DELL P2715Q":
+            set_new_input_source(d, InputSourceP2715Q.DP.value)
+            print(f"Switching {d.model} to DP")
+
+
+def set_config(profile):
     displays = get_displays()
-    for display in displays:
-        match display.model:
-            case "DELL S2721DS":
-                match display.current_input_source:
-                    case InputSourceS2721DS.HDMI_1.value:
-                        set_new_input_source(display, InputSourceS2721DS.HDMI_2.value)
-                        print(f"Switching {display.model} to HDMI_2")
-
-                    case InputSourceS2721DS.HDMI_2.value:
-                        set_new_input_source(display, InputSourceS2721DS.HDMI_1.value)
-                        print(f"Switching {display.model} to HDMI_1")
-
-            case "DELL P2715Q":
-                match display.current_input_source:
-                    case InputSourceP2715Q.DP.value:
-                        set_new_input_source(display, InputSourceP2715Q.HDMI.value)
-                        print(f"Switching {display.model} to DP")
-
-                    case InputSourceP2715Q.HDMI.value:
-                        set_new_input_source(display, InputSourceP2715Q.DP.value)
-                        print(f"Switching {display.model} to HDMI")
-                    case None:
-                        print(f"Skipping {display.model} because it's off")
+    if profile.lower() in ("gustavoip", "home"):
+        to_home(displays)
+    if profile.lower() == "work":
+        to_work(displays)
 
 
 if __name__ == "__main__":
-    toggle()
+    set_config(str(sys.argv[1]) if len(sys.argv) == 2 else os.getlogin())
